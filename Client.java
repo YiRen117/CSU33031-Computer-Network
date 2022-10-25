@@ -4,8 +4,6 @@
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
-import java.io.File;
-import java.io.FileInputStream;
 import java.util.Scanner;
 
 /**
@@ -45,20 +43,34 @@ public class Client extends Node {
 
 			PacketContent content = PacketContent.fromDatagramPacket(packet);
 
-			if (content.getType() == PacketContent.FILEINFO) {
-				System.out.println("File incoming. File info as below:");
-				System.out.println("File name: " + ((FileInfoContent) content).getFileName());
-				System.out.println("File size: " + ((FileInfoContent) content).getFileSize());
+			DatagramPacket response;
+			switch (content.getPacketType()){
+				case PacketContent.FILEINFO:
+					System.out.println("File incoming. File info as below:");
+					System.out.println("File name: " + ((FileInfoContent) content).getFileName());
+					System.out.println("File size: " + ((FileInfoContent) content).getFileSize());
 
-				DatagramPacket response;
-				response = new StringPacketContent("ACK: OK - Received file").toDatagramPacket();
-				response.setSocketAddress(packet.getSocketAddress());
-				socket.send(response);
-				this.notify();
-			}
+					response = new ACKPacketContent("ACK: OK - Received file").toDatagramPacket();
+					response.setSocketAddress(packet.getSocketAddress());
+					socket.send(response);
+					this.notify();
+					break;
 
-			if (content.getType() == PacketContent.STRINGPACKET) {
-				System.out.println(content.toString());
+				case PacketContent.ACKPACKET:
+					System.out.println(content.toString());
+					break;
+
+				case PacketContent.STRINGPACKET:
+					System.out.println(content.toString());
+					response = new ACKPacketContent("ACK: OK - Received message").toDatagramPacket();
+					response.setSocketAddress(packet.getSocketAddress());
+					socket.send(response);
+					this.notify();
+					break;
+
+				default:
+					System.out.println("Problem with package contents. Incoming packet type: " + content.getPacketType());
+					break;
 			}
 		}catch(Exception e) {e.printStackTrace();}
 	}
@@ -70,10 +82,27 @@ public class Client extends Node {
 	 */
 	public synchronized void start() throws Exception {
 		Scanner input = new Scanner(System.in);
-		String fname = input.next();
-
+		boolean valid = false;
+		String fname = null;
+		String[] fnsplit = null;
+		while(!valid){
+			fname = input.next();
+			fnsplit = fname.split("\\.");
+			if(fnsplit.length == 2 && (fnsplit[1].equalsIgnoreCase("txt") ||
+					fnsplit[1].equalsIgnoreCase("png"))){
+				valid = true;
+			}
+			else{
+				System.out.println("-- File name invalid.");
+			}
+		}
 		DatagramPacket request;
-		request= new StringPacketContent(fname).toDatagramPacket();
+		if(fnsplit[1].equalsIgnoreCase("txt")){
+			request= new FileRequestContent(fname, PacketContent.TXTFILE).toDatagramPacket();
+		}
+		else{
+			request= new FileRequestContent(fname, PacketContent.PNGFILE).toDatagramPacket();
+		}
 		request.setSocketAddress(dstAddress);
 		socket.send(request);
 

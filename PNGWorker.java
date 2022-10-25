@@ -2,9 +2,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 
 public class PNGWorker extends Worker{
-    static final int DEFAULT_DST_PORT = 50001;
     static final int DEFAULT_SRC_PORT = 50003;
-    static final String DEFAULT_DST_NODE = "server";
     static final String DEFAULT_SRC_NODE = "PNGWorker";
 
 

@@ -16,7 +16,8 @@ public class FileInfoContent extends PacketContent {
 	 * @param size Size of filename.
 	 */
 	FileInfoContent(String filename, int size) {
-		type= FILEINFO;
+		packetType= FILEINFO;
+		fileType= NONFILE;
 		this.filename = filename;
 		this.size= size;
 	}
@@ -27,7 +28,8 @@ public class FileInfoContent extends PacketContent {
 	 */
 	protected FileInfoContent(ObjectInputStream oin) {
 		try {
-			type= FILEINFO;
+			packetType= FILEINFO;
+			fileType= NONFILE;
 			filename= oin.readUTF();
 			size= oin.readInt();
 		}

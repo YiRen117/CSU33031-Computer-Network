@@ -15,7 +15,8 @@ public class StringPacketContent extends PacketContent {
 	 * @param size Size of filename.
 	 */
 	StringPacketContent(String info) {
-		type= STRINGPACKET;
+		packetType= STRINGPACKET;
+		fileType= NONFILE;
 		this.info = info;
 	}
 
@@ -25,7 +26,8 @@ public class StringPacketContent extends PacketContent {
 	 */
 	protected StringPacketContent(ObjectInputStream oin) {
 		try {
-			type= STRINGPACKET;
+			packetType= STRINGPACKET;
+			fileType= NONFILE;
 			info= oin.readUTF();
 		}
 		catch(Exception e) {e.printStackTrace();}

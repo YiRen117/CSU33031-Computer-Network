@@ -30,42 +30,68 @@ public class Server extends Node {
 
 			PacketContent content= PacketContent.fromDatagramPacket(packet);
 
-			if (content.getType()==PacketContent.FILEINFO) {
-				System.out.println("File incoming. File info as below:");
-				System.out.println("File name: " + ((FileInfoContent)content).getFileName());
-				System.out.println("File size: " + ((FileInfoContent)content).getFileSize());
+			DatagramPacket response;
+			switch (content.getPacketType()) {
+				case PacketContent.FILEINFO:
+					System.out.println("File incoming. File info as below:");
+					System.out.println("File name: " + ((FileInfoContent)content).getFileName());
+					System.out.println("File size: " + ((FileInfoContent)content).getFileSize());
 
-				DatagramPacket response;
-				response= new StringPacketContent("ACK: OK - Received file").toDatagramPacket();
-				response.setSocketAddress(packet.getSocketAddress());
-				socket.send(response);
-
-				System.out.println("[Sending packet w/ name & length]");
-				packet.setSocketAddress(new InetSocketAddress(DEFAULT_DST_NODE, DEFAULT_CLI_PORT));
-				socket.send(packet);
-				System.out.println("[Packet sent]");
-			}
-
-			if (content.getType()==PacketContent.STRINGPACKET){
-				String incomingString = content.toString();
-				if(incomingString.endsWith(".txt") || incomingString.endsWith(".png")){
-					System.out.println("Received file request: " + incomingString);
-
-					DatagramPacket response;
-					response= new StringPacketContent("ACK: OK - Received request").toDatagramPacket();
+					response= new ACKPacketContent("ACK: OK - Received file").toDatagramPacket();
 					response.setSocketAddress(packet.getSocketAddress());
 					socket.send(response);
 
-					DatagramPacket request;
-					request= packet;
-					request.setSocketAddress(incomingString.endsWith(".txt") ? new InetSocketAddress(
-							DEFAULT_SRC_NODE_TXT, DEFAULT_SRC_PORT_TXT) : new InetSocketAddress(
-							DEFAULT_SRC_NODE_PNG, DEFAULT_SRC_PORT_PNG));
-					socket.send(request);
-				}
-				else if(incomingString.startsWith("ACK: ")){
-					System.out.println(incomingString);
-				}
+					System.out.println("[Sending packet w/ name & length]");
+					packet.setSocketAddress(new InetSocketAddress(DEFAULT_DST_NODE, DEFAULT_CLI_PORT));
+					socket.send(packet);
+					System.out.println("[Packet sent]");
+					break;
+
+				case PacketContent.STRINGPACKET:
+					System.out.println(content.toString());
+
+					response= new ACKPacketContent("ACK: OK - Received message").toDatagramPacket();
+					response.setSocketAddress(packet.getSocketAddress());
+					socket.send(response);
+
+					System.out.println("[Sending packet w/ error message]");
+					packet.setSocketAddress(new InetSocketAddress(DEFAULT_DST_NODE, DEFAULT_CLI_PORT));
+					socket.send(packet);
+					System.out.println("[Packet sent]");
+					break;
+
+				case PacketContent.ACKPACKET:
+					System.out.println(content.toString());
+					break;
+
+				case PacketContent.FILEREQUEST:
+					String incomingString = content.toString();
+					System.out.println("Received file request: " + incomingString);
+					response= new ACKPacketContent("ACK: OK - Received request").toDatagramPacket();
+					response.setSocketAddress(packet.getSocketAddress());
+					socket.send(response);
+
+					byte fileType = content.getFileType();
+					switch (fileType){
+						case PacketContent.TXTFILE:
+							System.out.println("[Sending file request to TXTWorker]");
+							packet.setSocketAddress(new InetSocketAddress(DEFAULT_SRC_NODE_TXT, DEFAULT_SRC_PORT_TXT));
+							break;
+						case PacketContent.PNGFILE:
+							System.out.println("[Sending file request to PNGWorker]");
+							packet.setSocketAddress(new InetSocketAddress(DEFAULT_SRC_NODE_PNG, DEFAULT_SRC_PORT_PNG));
+							break;
+						default:
+							System.out.println("File type not supported.");
+							break;
+					}
+					socket.send(packet);
+					System.out.println("[Packet sent]");
+					break;
+
+				default:
+					System.out.println("Problem with package contents. Incoming packet type: " + content.getPacketType());
+					break;
 			}
 		}
 		catch(Exception e) {e.printStackTrace();}

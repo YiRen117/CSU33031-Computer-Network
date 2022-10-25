@@ -12,10 +12,16 @@ import java.io.ObjectOutputStream;
  */
 public abstract class PacketContent {
 
-	public static final int STRINGPACKET= 10;
-	public static final int FILEINFO= 100;
+	public static final byte STRINGPACKET= 0b00010000; //0x10
+	public static final byte ACKPACKET= 0b00010001; //0x11
+	public static final byte FILEREQUEST= 0b00010010; //0x12
+	public static final byte FILEINFO= 0b00010011; //0x13
+	public static final byte NONFILE= 0b00100000; //0x20
+	public static final byte TXTFILE= 0b00100001; //0x21
+	public static final byte PNGFILE= 0b00100010; //0x22
 
-	int type= 0;
+	byte packetType= 0;
+	byte fileType= 0;
 
 	/**
 	 * Constructs an object out of a datagram packet.
@@ -25,7 +31,7 @@ public abstract class PacketContent {
 		PacketContent content= null;
 
 		try {
-			int type;
+			byte packetType, fileType;
 
 			byte[] data;
 			ByteArrayInputStream bin;
@@ -35,11 +41,18 @@ public abstract class PacketContent {
 			bin= new ByteArrayInputStream(data);
 			oin= new ObjectInputStream(bin);
 
-			type= oin.readInt();  // read type from beginning of packet
+			packetType= oin.readByte();  // read type from beginning of packet
+			fileType= oin.readByte();
 
-			switch(type) {   // depending on type create content object
+			switch(packetType) {   // depending on type create content object
 			case STRINGPACKET:
 				content= new StringPacketContent(oin);
+				break;
+			case ACKPACKET:
+				content= new ACKPacketContent(oin);
+				break;
+			case FILEREQUEST:
+				content= new FileRequestContent(oin, fileType);
 				break;
 			case FILEINFO:
 				content= new FileInfoContent(oin);
@@ -81,7 +94,8 @@ public abstract class PacketContent {
 			bout= new ByteArrayOutputStream();
 			oout= new ObjectOutputStream(bout);
 
-			oout.writeInt(type);         // write type to stream
+			oout.writeByte(packetType);         // write type to stream
+			oout.writeByte(fileType);
 			toObjectOutputStream(oout);  // write content to stream depending on type
 
 			oout.flush();
@@ -109,8 +123,12 @@ public abstract class PacketContent {
 	 *
 	 * @return Returns the type of the packet.
 	 */
-	public int getType() {
-		return type;
+	public byte getPacketType() {
+		return packetType;
+	}
+
+	public byte getFileType() {
+		return fileType;
 	}
 
 }
