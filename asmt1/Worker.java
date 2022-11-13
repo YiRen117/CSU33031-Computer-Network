@@ -29,6 +29,7 @@ public class Worker extends Node {
         switch (content.getPacketType()) {
             case PacketContent.ACKPACKET:
                 System.out.println(content.toString());
+                sender.ackReceipt();
                 break;
             case PacketContent.FILEREQUEST:
                 fileLookUp(content.toString());
@@ -61,22 +62,22 @@ public class Worker extends Node {
             System.out.println("File size: " + buffer.length);
 
             FileInfoContent fcontent = new FileInfoContent(fname, size);
-            System.out.println("[Sending packet w/ name & length]"); // Send packet with file name and length
+            System.out.println("[Sent packet w/ name & length]"); // Send packet with file name and length
             response = fcontent.toDatagramPacket();
             response.setSocketAddress(dstAddress);
-            socket.send(response);
-            System.out.println("[Packet sent]");
+            sender = new Sender(socket, response);
+            sender.start();
             fin.close();
         } catch (FileNotFoundException e) {
             System.out.println(fname + " is not found.");
 
             try{
                 StringPacketContent scontent = new StringPacketContent("Error: File '" + fname + "' not found");
-                System.out.println("[Sending packet w/ error message]");
+                System.out.println("[Sent packet w/ error message]");
                 response = scontent.toDatagramPacket();
                 response.setSocketAddress(dstAddress);
-                socket.send(response);
-                System.out.println("[Packet sent]");
+                sender = new Sender(socket, response);
+                sender.start();
             } catch(Exception e1) {}
 
         } catch(Exception e) {}
@@ -89,7 +90,7 @@ public class Worker extends Node {
 
     public synchronized void start() throws Exception {
         System.out.println(this.srcName + " waiting for contact");
-        this.wait();
+        this.wait(90000);
     }
 
 }

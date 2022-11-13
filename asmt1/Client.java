@@ -58,6 +58,7 @@ public class Client extends Node {
 
 				case PacketContent.ACKPACKET:
 					System.out.println(content.toString());
+					sender.ackReceipt();
 					break;
 
 				case PacketContent.STRINGPACKET:
@@ -80,16 +81,21 @@ public class Client extends Node {
 	 * Sender Method
 	 *
 	 */
-	public synchronized void start() throws Exception {
+	public synchronized int start() throws Exception {
+
 		Scanner input = new Scanner(System.in);
 		boolean valid = false;
 		String fname = null;
 		String[] fnsplit = null;
 		while(!valid){
+			System.out.print("Please enter the full file name for searching: ");
 			fname = input.next();
+			if(fname.equalsIgnoreCase("quit")){
+				return 0;
+			}
 			fnsplit = fname.split("\\.");
-			if(fnsplit.length == 2 && (fnsplit[1].equalsIgnoreCase("txt") ||
-					fnsplit[1].equalsIgnoreCase("png"))){
+			if(fnsplit.length == 2 && (!fnsplit[0].equals("")) && (fnsplit[1].equalsIgnoreCase("txt") ||
+					fnsplit[1].equalsIgnoreCase("png") || fnsplit[1].equalsIgnoreCase("jpg"))){
 				valid = true;
 			}
 			else{
@@ -100,13 +106,18 @@ public class Client extends Node {
 		if(fnsplit[1].equalsIgnoreCase("txt")){
 			request= new FileRequestContent(fname, PacketContent.TXTFILE).toDatagramPacket();
 		}
-		else{
+		else if(fnsplit[1].equalsIgnoreCase("png")){
 			request= new FileRequestContent(fname, PacketContent.PNGFILE).toDatagramPacket();
 		}
+		else{
+			request= new FileRequestContent(fname, PacketContent.JPGFILE).toDatagramPacket();
+		}
 		request.setSocketAddress(dstAddress);
-		socket.send(request);
+		sender = new Sender(socket, request);
+		sender.start();
 
-		this.wait();
+		this.wait(90000);
+		return 1;
 	}
 
 
@@ -117,7 +128,12 @@ public class Client extends Node {
 	 */
 	public static void main(String[] args) {
 		try {
-			(new Client(DEFAULT_DST_NODE, DEFAULT_DST_PORT, DEFAULT_SRC_PORT)).start();
+			System.out.println("Welcome to the file searching system!");
+			int programStatus = 1;
+			Client clt = new Client(DEFAULT_DST_NODE, DEFAULT_DST_PORT, DEFAULT_SRC_PORT);
+			while(programStatus == 1){
+				programStatus = clt.start();
+			}
 			System.out.println("Program completed");
 		} catch(java.lang.Exception e) {e.printStackTrace();}
 	}

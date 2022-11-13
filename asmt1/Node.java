@@ -9,6 +9,7 @@ public abstract class Node {
 	DatagramSocket socket;
 	Listener listener;
 	CountDownLatch latch;
+	Sender sender;
 
 	Node() {
 		latch= new CountDownLatch(1);

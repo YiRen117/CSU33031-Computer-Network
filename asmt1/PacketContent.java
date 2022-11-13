@@ -19,6 +19,7 @@ public abstract class PacketContent {
 	public static final byte NONFILE= 0b00100000; //0x20
 	public static final byte TXTFILE= 0b00100001; //0x21
 	public static final byte PNGFILE= 0b00100010; //0x22
+	public static final byte JPGFILE= 0b00100011; //0x23
 
 	byte packetType= 0;
 	byte fileType= 0;
